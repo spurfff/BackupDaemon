@@ -20,7 +20,7 @@ if [[ -d "$working_dir" ]]; then
 	else
 		echo -e "$logprefix $logs not found\n" >> "${logs}"
 		echo -e "$logprefix Creating log file...\n" >> "${logs}"
-		touch $logs
+		touch "$logs"
 		if [[ $? -ne 0 ]]; then
 			echo -e "$logprefix An error has occured while trying to create the log file at $logs \n" >> "${logs}"
 			exit 1
@@ -44,7 +44,11 @@ if [[ -z "$(df -t cifs)" ]]; then
 	fi
 	echo -e "$logprefix ERROR - Output from df: $df_output\n" >> "${logs}"
 else
-	echo -e "$logprefix cifs mount detected\n" >> "${logs}"
+	echo -e "$logprefix Remote directory detected\n" >> "${logs}"
+fi
+
+if [[ ! -f /usr/bin/rsync ]]; then
+	echo -e "$logprefix Unable to find rsync binaries...\n" >> "${logs}"
 fi
 
 # The actual syncing process
