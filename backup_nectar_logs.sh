@@ -82,10 +82,10 @@ check_size() {
 		echo -e "$logprefix Archiving Local Directory...\n" >> "${logs}"
 		archive_files
 	else
-		echo -e "$logprefix Local directory is within limitations at: ${green}$current_size${reset}\n" >> "${logs}"
+		echo -e "$logprefix Local directory is within limitations at: ${green}$current_size MB${reset}\n" >> "${logs}"
 	fi
 }
-
+check_size
 
 # The actual syncing process
 back_it_up() {
