@@ -7,8 +7,8 @@ red='\033[0;31m'
 green='\033[0;32m'
 reset='\033[0m'
 bold='\033[1;37m'
-remote_dir="/$working_dir/Remote_Dir"
-local_dir="/$working_dir/Local_Dir"
+remote_dir="$working_dir/Remote_Dir"
+local_dir="$working_dir/Local_Dir"
 logprefix="${bold}$(date)${reset}"
 remote_server="10.37.3.16"
 
