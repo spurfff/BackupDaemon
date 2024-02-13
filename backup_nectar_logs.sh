@@ -33,6 +33,19 @@ else
 fi
 
 # Make sure that the Remote dir is mounted at the Remote_dir location
+if [[ -z "$(df -t cifs)" ]]; then
+	df_output=$(df -t cifs)
+	df_exit_code=$?
+	echo -e "$logprefix Exit code: $df_exit_code\n" >> "${logs}"
+	if [[ $df_exit_code -ne 0 ]]; then
+		echo -e "$logprefix Failed to find Remote directory\n" >> "${logs}"
+		echo -e "$logprefix Exiting with errors...\n" >> "${logs}"
+		exit 1
+	fi
+	echo -e "$logprefix ERROR - Output from df: $df_output\n" >> "${logs}"
+else
+	echo -e "$logprefix cifs mount detected\n" >> "${logs}"
+fi
 
 # The actual syncing process
 rsync -av "${remote_dir}" "${local_dir}" >> "${logs}"
