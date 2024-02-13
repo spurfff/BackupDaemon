@@ -9,8 +9,11 @@ reset='\033[0m'
 bold='\033[1;37m'
 remote_dir="$working_dir/Remote_Dir"
 local_dir="$working_dir/Local_Dir"
+archive_dir="$working_dir/Archive"
+backup_name="NectarLogBackup"
 logprefix="${bold}$(date)${reset}"
 remote_server="10.37.3.16"
+control=5
 
 # Make sure that the Backup directory and .log file are in place as expected
 if [[ -d "$working_dir" ]]; then
@@ -49,15 +52,51 @@ fi
 
 if [[ ! -f /usr/bin/rsync ]]; then
 	echo -e "$logprefix Unable to find rsync binaries...\n" >> "${logs}"
+else
+	echo -e "$logprefix rsync binaries detected on system\n" >> "${logs}"
 fi
 
+# Create a function to archive files if they exceed the size specified by the control
+archive_files() {
+	tar -czvf "${archive_dir}/$backup_name$(date +%Y%m%d_%H%M%S).tar.gz" "${local_dir}/"* &>"${logs}"
+	if [[ $? -eq 0 ]]; then
+		echo -e "$logprefix Archiving ${green}completed${reset}\n" >> "${logs}"
+		echo -e "$logprefix clearing the contents of the Local Dir....\n" >> "${logs}"
+		rm -rf "$local_dir/"*
+		if [[ $? -ne 0  ]]; then
+			echo -e "$logprefix An error has occured while tring clean the Local dir of old files...\n" >> "${logs}"
+			echo -e "$logprefix Exiting...\n" >> "${logs}"
+			exit 1
+		fi
+	else
+		echo -e "$logprefix Archiving has ${red}failed${reset}\n" >> "${logs}"
+	fi
+}
+
+# check the size of the Local_Dir
+# If it's larger than 5MB, archive the files and place in the /Archive dir
+check_size() {
+	current_size=$(du -shm "$local_dir" | awk '{print $1}')
+	if [[ $current_size -ge $control ]]; then
+		echo -e "$logprefix Local Directory size exceeds ${red}$control MB${reset}\n" >> "${logs}"
+		echo -e "$logprefix Archiving Local Directory...\n" >> "${logs}"
+		archive_files
+	else
+		echo -e "$logprefix Local directory is within limitations at: ${green}$current_size${reset}\n" >> "${logs}"
+	fi
+}
+
+
 # The actual syncing process
-rsync -av "${remote_dir}" "${local_dir}" >> "${logs}"
-if [[ $? -eq 0 ]]; then
-	echo -e "$logprefix rsync backup ${green}completed${reset}\n" >> "${logs}"
-else
-	echo -e "$logprefix rsync backup ${red}failed${reset}\n" >> "${logs}"
-fi
-local_dir_size=$(du -sh "${local_dir}" | cut -d " " -f1)
-echo -e "$logprefix Current Backup Size: ${local_dir_size}\n" >> "${logs}"
-echo -e "#############END################\n\n" >> "${logs}"
+back_it_up() {
+	rsync -avz "${remote_dir}/" "${local_dir}" >> "${logs}"
+	if [[ $? -eq 0 ]]; then
+		echo -e "$logprefix rsync backup ${green}completed${reset}\n" >> "${logs}"
+	else
+		echo -e "$logprefix rsync backup ${red}failed${reset}\n" >> "${logs}"
+	fi
+	local_dir_size=$(du -sh "${local_dir}" | cut -d " " -f1)
+	echo -e "$logprefix Current Backup Size: ${local_dir_size}\n" >> "${logs}"
+}
+back_it_up
+echo -e "#############END BACKUP################\n\n" >> "${logs}"
