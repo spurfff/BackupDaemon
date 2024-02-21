@@ -56,7 +56,7 @@ else
 	echo -e "$logprefix rsync binaries detected on system\n" >> "${logs}"
 fi
 
-# Create a function to archive files if they exceed the size specified by the control
+# Create a function to archive files if they exceed the size specified by the control variable
 archive_files() {
 	tar -czvf "${archive_dir}/$backup_name$(date +%Y%m%d_%H%M%S).tar.gz" "${local_dir}/"* &>"${logs}"
 	if [[ $? -eq 0 ]]; then
