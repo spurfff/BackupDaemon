@@ -64,7 +64,7 @@ archive_files() {
 		echo -e "$logprefix clearing the contents of the Local Dir....\n" >> "${logs}"
 		rm -rf "$local_dir/"*
 		if [[ $? -ne 0  ]]; then
-			echo -e "$logprefix An error has occured while tring clean the Local dir of old files...\n" >> "${logs}"
+			echo -e "$logprefix An error has occured while attempting to clean old files from $local_dir...\n" >> "${logs}"
 			echo -e "$logprefix Exiting...\n" >> "${logs}"
 			exit 1
 		fi
