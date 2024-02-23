@@ -112,6 +112,9 @@ back_it_up() {
 	echo -e "$logprefix ######## ${gray}FINISHED Backup${reset} ########\n" >> "${logs}"
 }
 
+# In the users home directory, there should be a directory called MGMT
+# This dir contains sym links to files important to the script
+# This function ensures that the MGMT dir is updated with these links
 sync_mgmt_dir() {
 	diff_output=$(diff -r "$working_dir" "$mgmt_dir" )
 	is_different=$?
