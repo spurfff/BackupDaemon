@@ -18,7 +18,8 @@ mgmt_dir="$HOME/MGMT"
 backup_name="NectarLogBackup"
 logprefix="${bold}$(date)${reset}"
 remote_server="10.37.3.16"
-control=5
+# The control size is in bytes
+control=5000000
 
 # Make sure that the Backup directory and .log file are in place as expected
 check_for_backupsAndLogs() {
@@ -61,7 +62,7 @@ check_remote_dir() {
 
 # Create a function to archive files if they exceed the size specified by the control variable
 archive_files() {
-	tar -czvf "${archive_dir}/$backup_name$(date +%Y%m%d_%H%M%S).tar.gz" "${local_dir}/"* &>"${logs}"
+	tar -czvf "${archive_dir}/$backup_name$(date +%Y%m%d_%H%M%S).tar.gz" "${local_dir}/"* >> "${logs}" 2>&1
 	if [[ $? -eq 0 ]]; then
 		echo -e "$logprefix Archiving ${green}completed${reset}\n" >> "${logs}"
 		echo -e "$logprefix clearing the contents of the Local Dir....\n" >> "${logs}"
@@ -81,19 +82,19 @@ archive_files() {
 # to accomplish this, use the archive_files
 check_size() {
 	echo -e "$logprefix ${blue}STARTING:${reset} Check Size and Archive\n" >> "${logs}"
-	current_size=$(du -shm "$local_dir" | awk '{print $1}')
+	local current_size=$(du -sb "$local_dir" | awk '{ print $1 }')
 	if [[ $current_size -ge $control ]]; then
-		echo -e "$logprefix Local Directory size exceeds ${red}$control MB${reset}\n" >> "${logs}"
+		echo -e "$logprefix Local Directory size exceeds ${red}$control Bytes${reset}\n" >> "${logs}"
 		echo -e "$logprefix Archiving Local Directory...\n" >> "${logs}"
 		archive_files
 	else
-		echo -e "$logprefix Local directory is within limitations at/under: ${green}$current_size MB${reset}\n" >> "${logs}"
+		echo -e "$logprefix Local directory is within limitations under: ${green}$control Bytes${reset}\n" >> "${logs}"
 	fi
 }
 
 # The actual syncing process
 back_it_up() {
-	echo -e "$logprefix ${blue}STARTING:${reset} Backup Remote Directory\n" >> "${logs}"
+	echo -e "$logprefix ${blue}STARTING:${reset} Synchronize Directories\n" >> "${logs}"
 	if [[ ! -f /usr/bin/rsync ]]; then
 		echo -e "$logprefix Unable to find rsync binaries...\n" >> "${logs}"
 	else
@@ -103,12 +104,12 @@ back_it_up() {
 
 	rsync -avz "${remote_dir}/" "${local_dir}" >> "${logs}"
 	if [[ $? -eq 0 ]]; then
-		echo -e "$logprefix ${green}completed${reset} rsync backup\n" >> "${logs}"
+		echo -e "$logprefix ${green}Completed${reset} Synchronize Directories\n" >> "${logs}"
 	else
 		echo -e "$logprefix ${red}failed${reset} rsync backup\n" >> "${logs}"
 	fi
-	local_dir_size=$(du -sh "${local_dir}" | awk '{ print $1 }')
-	echo -e "$logprefix Current Backup Size: ${bold}${underline}${local_dir_size}${reset}\n" >> "${logs}"
+	local current_size=$(du -sb "$local_dir" | awk '{ print $1 }')
+	echo -e "$logprefix Current Backup Size: ${bold}${underline}${current_size}${reset} Bytes\n" >> "${logs}"
 	echo -e "$logprefix ######## ${gray}FINISHED Backup${reset} ########\n" >> "${logs}"
 }
 
@@ -126,7 +127,7 @@ sync_mgmt_dir() {
 			echo -e "$logprefix $working_dir and $mgmt_dir are out of sync ${red}out of sync${reset}\n" >> "$logs"
 			echo -e "$logprefix Updating Sym Links...\n" >> "$logs"
 			old_contents=$(ls -1 "$mgmt_dir")
-			ln -s "$working_dir"/* "$mgmt_dir" 2>>"$logs"
+			ln -s "$working_dir"/* "$mgmt_dir" 2>> "$logs"
 			new_contents=$(ls -1 "$mgmt_dir")
 			echo -e "$logprefix OLD CONTENTS: ${red}$old_contents${reset}\n" >> "$logs"
 			echo -e "$logprefix NEW CONTENTS: ${green}$new_contents${reset}\n" >> "$logs"
@@ -143,10 +144,10 @@ sync_mgmt_dir() {
 	echo -e "$logprefix ######## ${gray}FINISHED Sync MGMT DIR${reset} ########\n" >> "$logs"
 }
 
-echo -e "$logprefix ${yellow}STARTING${reset}\n" >> "${logs}"
+echo -e "$logprefix ${yellow}STARTING SCRIPT${reset}\n" >> "${logs}"
 check_for_backupsAndLogs
 check_remote_dir
 check_size
 back_it_up
 sync_mgmt_dir
-echo -e "$logprefix ${gray}~~~~END~~~~${reset}\n\n ---- \n\n" >> "${logs}"
+echo -e "$logprefix ${gray}~~~~END SCRIPT~~~~${reset}\n\n ---- \n\n" >> "${logs}"
