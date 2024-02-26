@@ -59,9 +59,22 @@ check_remote_dir() {
 	fi
 }
 
+# Create a function to check if a variable is a float
+is_float() {
+	local input="$1"
+
+	if [[ "$input" =~ \. ]]; then
+		echo -e "$logprefix float ${bold}${underline}found${reset} while evaluating input: $input\n" >> "${logs}"
+		return 0
+	else
+		echo -e "$logprefix float ${red}NOT${reset} ${bold}${underline}found${reset} while evaluating input: $input\n" >> "${logs}"
+		return 1
+	fi
+}
+
 # Create a function to archive files if they exceed the size specified by the control variable
 archive_files() {
-	tar -czvf "${archive_dir}/$backup_name$(date +%Y%m%d_%H%M%S).tar.gz" "${local_dir}/"* &>"${logs}"
+	tar -czvf "${archive_dir}/$backup_name$(date +%Y%m%d_%H%M%S).tar.gz" "${local_dir}/"* &>>"${logs}"
 	if [[ $? -eq 0 ]]; then
 		echo -e "$logprefix Archiving ${green}completed${reset}\n" >> "${logs}"
 		echo -e "$logprefix clearing the contents of the Local Dir....\n" >> "${logs}"
@@ -81,13 +94,26 @@ archive_files() {
 # to accomplish this, use the archive_files
 check_size() {
 	echo -e "$logprefix ${blue}STARTING:${reset} Check Size and Archive\n" >> "${logs}"
-	current_size=$(du -shm "$local_dir" | awk '{print $1}')
-	if [[ $current_size -ge $control ]]; then
-		echo -e "$logprefix Local Directory size exceeds ${red}$control MB${reset}\n" >> "${logs}"
-		echo -e "$logprefix Archiving Local Directory...\n" >> "${logs}"
-		archive_files
+	local_dir_size=$(du -sh "${local_dir}" | awk '{ print $1 }')
+	local_dir_size_without_suffix=${local_dir_size//[MGK]/}
+	if is_float "$local_dir_size_without_suffix"; then
+		echo -e "$logprefix Local_Dir size is a ${bold}${underline}float${reset}\n" >> "${logs}"
+		echo -e "$logprefix Checking if Local_Dir size ( $local_dir_size_without_suffix ) Exceeds the $control\n" >> "${logs}"
+		if python3 -c "print($local_dir_size_without_suffix >= $control)"; then
+			echo -e "$logprefix Local Directory size at/exceeds ${red}$control MB${reset}\n" >> "${logs}"
+			echo -e "$logprefix Archiving Local Directory...\n" >> "${logs}"
+			archive_files
+		else
+			echo -e "$logprefix Local directory is within limitations under: ${green}$control MB${reset}\n" >> "${logs}"
+		fi
 	else
-		echo -e "$logprefix Local directory is within limitations at/under: ${green}$current_size MB${reset}\n" >> "${logs}"
+		if [[ $local_dir_size_without_suffix -ge $control ]]; then
+			echo -e "$logprefix Local Directory size at/exceeds ${red}$control MB${reset}\n" >> "${logs}"
+			echo -e "$logprefix Archiving Local Directory...\n" >> "${logs}"
+			archive_files
+		else
+			echo -e "$logprefix Local directory is within limitations under: ${green}$control MB${reset}\n" >> "${logs}"
+		fi
 	fi
 }
 
